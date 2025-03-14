@@ -145,7 +145,14 @@ class APIQuery:
             self.api_key = os.getenv("OPENROUTER_API_KEY")
             self.base_url = "https://openrouter.ai/api/v1"
             self.api = "openai"
-        elif self.api != "local":
+        elif self.api == "local":
+            self.llm = LLM(
+                model=self.model,
+                tensor_parallel_size=torch.cuda.device_count(),
+                enforce_eager=True,
+                enable_prefix_caching=True
+            )
+        else:
             raise ValueError(f"API {self.api} not supported.")
         assert self.api == 'local' or self.api_key is not None, f"API key not found."
 
@@ -199,18 +206,12 @@ class APIQuery:
         return [result['output'] for result in results], detailed_cost, cost
     
     def run_queries_local(self, queries):
-        llm = LLM(
-            model=self.model,
-            tensor_parallel_size=torch.cuda.device_count(),
-            enforce_eager=True,
-            enable_prefix_caching=True
-        )
         sampling_params = SamplingParams(
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             top_p=self.kwargs.get("top_p", 0.95)
         )
-        response = llm.chat(
+        responses = self.llm.chat(
             messages=queries,
             sampling_params=sampling_params,
             use_tqdm=True

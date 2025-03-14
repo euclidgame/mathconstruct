@@ -17,4 +17,5 @@ inference:
   timeout: 2000
 problems:
   - "usamo"
-n_variations: 1
+  - "^bmo"
+n_variations: 2
