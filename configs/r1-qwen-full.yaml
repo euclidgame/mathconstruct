@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "r1-qwen"
+output_dir: "r1-qwen-full"
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 solver:
