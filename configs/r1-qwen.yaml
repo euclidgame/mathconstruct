@@ -1,0 +1,20 @@
+test_run: False
+output_dir: "r1-qwen"
+models:
+ - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+solver:
+  #system_prompt: "You are a math expert." 
+  parse_feedback: True
+  check_feedback: False
+  error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
+  max_feedback_rounds: 2
+  formatting_prefix: "Format your reply as follows:"
+inference:
+  temperature: 0.6
+  top_p: 0.95
+  max_tokens: 32768
+  concurrent_requests: 10 
+  timeout: 2000
+problems:
+  - "usamo"
+n_variations: 1

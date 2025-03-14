@@ -8,6 +8,9 @@ from openai import OpenAI
 import anthropic
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import torch
+
+from vllm import LLM, SamplingParams
 
 class APIQuery:
     def __init__(self, model, 
@@ -67,6 +70,7 @@ class APIQuery:
 
         self.model = model
         self.temperature = temperature
+        self.max_tokens = max_tokens
         self.kwargs = kwargs
         if max_tokens is not None:
             self.kwargs[max_tokens_param] = max_tokens
@@ -141,9 +145,9 @@ class APIQuery:
             self.api_key = os.getenv("OPENROUTER_API_KEY")
             self.base_url = "https://openrouter.ai/api/v1"
             self.api = "openai"
-        else:
+        elif self.api != "local":
             raise ValueError(f"API {self.api} not supported.")
-        assert self.api_key is not None, f"API key not found."
+        assert self.api == 'local' or self.api_key is not None, f"API key not found."
 
     def prepare_query(self, query):
         if not self.is_chat:
@@ -165,31 +169,68 @@ class APIQuery:
 
     def run_queries(self, queries):
         logger.info(f"Running {len(queries)} queries.")
-        with ThreadPoolExecutor(max_workers=self.concurrent_requests) as executor:
-            future_to_index = {
-                executor.submit(self.run_query_with_retry, query): i
-                for i, query in enumerate(queries)
-            }
+        if self.api == "local":
+            return self.run_queries_local(queries)
+        else:
+            with ThreadPoolExecutor(max_workers=self.concurrent_requests) as executor:
+                future_to_index = {
+                    executor.submit(self.run_query_with_retry, query): i
+                    for i, query in enumerate(queries)
+                }
 
-            results = [None] * len(queries)
+                results = [None] * len(queries)
 
-            for future in tqdm(as_completed(future_to_index), total=len(future_to_index)):
-                i = future_to_index[future]
-                results[i] = future.result()
-        detailed_cost = [
-            {
-                "cost": self.get_cost(result),
-                "input_tokens": result["input_tokens"],
-                "output_tokens": result["output_tokens"],
-            }
-            for result in results
-        ]
+                for future in tqdm(as_completed(future_to_index), total=len(future_to_index)):
+                    i = future_to_index[future]
+                    results[i] = future.result()
+            detailed_cost = [
+                {
+                    "cost": self.get_cost(result),
+                    "input_tokens": result["input_tokens"],
+                    "output_tokens": result["output_tokens"],
+                }
+                for result in results
+            ]
         cost = {
             "cost": sum([d["cost"] for d in detailed_cost]),
             "input_tokens": sum([d["input_tokens"] for d in detailed_cost]),
             "output_tokens": sum([d["output_tokens"] for d in detailed_cost]),
         }
         return [result['output'] for result in results], detailed_cost, cost
+    
+    def run_queries_local(self, queries):
+        llm = LLM(
+            model=self.model,
+            tensor_parallel_size=torch.cuda.device_count(),
+            enforce_eager=True,
+            enable_prefix_caching=True
+        )
+        sampling_params = SamplingParams(
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            top_p=self.kwargs.get("top_p", 0.95)
+        )
+        response = llm.chat(
+            messages=queries,
+            sampling_params=sampling_params,
+            use_tqdm=True
+        )
+        outputs = [response.outputs[0].text for response in responses]
+        detailed_cost = [
+            {
+                "cost": 0,
+                "input_tokens": len(response.prompt_token_ids),
+                "output_tokens": len(response.outputs[0].token_ids),
+            }
+            for response in responses
+        ]
+        cost = {
+            "cost": sum([d["cost"] for d in detailed_cost]),
+            "input_tokens": sum([d["input_tokens"] for d in detailed_cost]),
+            "output_tokens": sum([d["output_tokens"] for d in detailed_cost]),
+        }
+        return outputs, detailed_cost, cost
+        
     
     def run_query_with_retry(self, query):
         i = 0
