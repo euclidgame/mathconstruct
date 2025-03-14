@@ -14,7 +14,7 @@ inference:
   top_p: 0.95
   max_tokens: 32768
   concurrent_requests: 10 
-  timeout: 2000
+  timeout: 10000000
 problems:
   - "usamo"
   - "^bmo"
