@@ -269,7 +269,7 @@ class CoTSolver(Solver):
         } for _ in range(len(problems))]
         queries = self.solve_initial_round(problems)
         checker = [problem.parse_and_check(q) for problem, q in zip(problems, queries)]
-        logger.info(f"Solved instances after feedback round: {np.mean([c[1] for c in checker]):.5f}")
+        logger.info(f"Solved instances after initial round: {np.mean([c[1] for c in checker]):.5f}")
         queries = self.solve_parse_feedback_rounds(problems, queries)
         # log cost
         logger.info(f"Total cost: {self.cost}")

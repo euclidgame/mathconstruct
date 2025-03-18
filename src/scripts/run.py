@@ -235,54 +235,61 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
         model_dir = os.path.join(run_dir, model_name.replace("/", "__"))
         os.makedirs(model_dir, exist_ok=True)
 
-        checker = []
+        all_correctness = []
 
-        for batch_start in range(0, len(problem_instances_model), batch_size):
-            batch_end = min(batch_start + batch_size, len(problem_instances_model))
-            batch = problem_instances_model[batch_start:batch_end]
-            
-            logger.info(f"Processing batch {batch_start//batch_size + 1}, problems {batch_start+1} to {batch_end}")
-            problems = [ci[1] for ci in batch]
-            results, detailed_costs = solver.solve(problems)
+        for i in range(32):
+            checker = []
+            for batch_start in range(0, len(problem_instances_model), batch_size):
+                batch_end = min(batch_start + batch_size, len(problem_instances_model))
+                batch = problem_instances_model[batch_start:batch_end]
+                
+                logger.info(f"Processing batch {batch_start//batch_size + 1}, problems {batch_start+1} to {batch_end}")
+                problems = [ci[1] for ci in batch]
+                results, detailed_costs = solver.solve(problems)
 
-            checker.extend([problem.parse_and_check(r) for problem, r in zip(problems, results)])
+                checker.extend([problem.parse_and_check(r) for problem, r in zip(problems, results)])
 
-            logger.info(f"Solved problems: {np.mean([c[1] for c in checker])}")
+                logger.info(f"Solved problems: {np.mean([c[1] for c in checker])}")
 
-            # If test run only do some quick logging
-            if cfg.test_run:
-                for ci, result in zip(batch, results):
+                # If test run only do some quick logging
+                if cfg.test_run:
+                    for ci, result in zip(batch, results):
+                        problem_class, problem_inst = ci
+                        print_test_run(problem_class, problem_inst, result)
+                    continue
+
+                # Process and store results for this batch
+                for ci, result, cost in zip(batch, results, detailed_costs):
                     problem_class, problem_inst = ci
-                    print_test_run(problem_class, problem_inst, result)
-                continue
-
-            # Process and store results for this batch
-            for ci, result, cost in zip(batch, results, detailed_costs):
-                problem_class, problem_inst = ci
-                if problem_class not in problem_dumps:
-                    problem_dumps[problem_class] = []
-                # remove the input query and system message from the response
-                if result[0]['role'] == "system":
+                    if problem_class not in problem_dumps:
+                        problem_dumps[problem_class] = []
+                    # remove the input query and system message from the response
+                    if result[0]['role'] == "system":
+                        result = result[1:]
                     result = result[1:]
-                result = result[1:]
-                dump = {
-                    "problem": problem_inst.to_json(),
-                    "response": result,
-                    "cost": cost
-                }
-                # loop through problem dumps and first the first None, then set it to dump
-                for i, d in enumerate(problem_dumps[problem_class]):
-                    if d is None:
-                        problem_dumps[problem_class][i] = dump
-                        break
+                    dump = {
+                        "problem": problem_inst.to_json(),
+                        "response": result,
+                        "cost": cost
+                    }
+                    # loop through problem dumps and first the first None, then set it to dump
+                    for i, d in enumerate(problem_dumps[problem_class]):
+                        if d is None:
+                            problem_dumps[problem_class][i] = dump
+                            break
 
-                # If we completed a class, save the results
-                if all(d is not None for d in problem_dumps[problem_class]):
-                    dumps = problem_dumps[problem_class]
-                    problem_path = os.path.join(model_dir, f"{problem_class.config.name}.json")
-                    with open(problem_path, "w") as f: 
-                        json.dump(dumps, f, indent=4)
-                    print(f"Finished and saved:", problem_path)
+                    # If we completed a class, save the results
+                    if all(d is not None for d in problem_dumps[problem_class]):
+                        dumps = problem_dumps[problem_class]
+                        problem_path = os.path.join(model_dir, f"{problem_class.config.name}-try-{i}.json")
+                        with open(problem_path, "w") as f: 
+                            json.dump(dumps, f, indent=4)
+                        print(f"Finished and saved:", problem_path)
+            if all_correctness == []:
+                all_correctness = [c[1] for c in checker]
+            else:
+                all_correctness = [a or b for a, b in zip(all_correctness, [c[1] for c in checker])]
+            logger.info(f"Correctness: {np.mean(all_correctness)}")
 
         logger.info("Run finished")
 

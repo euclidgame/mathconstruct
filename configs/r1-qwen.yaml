@@ -4,18 +4,17 @@ models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 solver:
   #system_prompt: "You are a math expert." 
-  parse_feedback: True
+  parse_feedback: False
   check_feedback: False
   error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
-  max_feedback_rounds: 2
+  max_feedback_rounds: 0
   formatting_prefix: "Format your reply as follows:"
 inference:
   temperature: 0.6
   top_p: 0.95
   max_tokens: 10000
-  concurrent_requests: 10 
+  concurrent_requests: 10
   timeout: 10000000
 problems:
-  - "usamo"
-  - "^bmo"
+  - ".*"
 n_variations: 2
