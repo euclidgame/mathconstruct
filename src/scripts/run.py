@@ -9,6 +9,7 @@ from math_construct.llm import DummyLLM, APIQuery, CoTSolver, CodeSolver
 from config.meta_config import get_pydantic_models_from_path
 from loguru import logger
 from tqdm import tqdm
+import numpy as np
 
 # Disable Langchain tracing
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
@@ -234,12 +235,19 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
         model_dir = os.path.join(run_dir, model_name.replace("/", "__"))
         os.makedirs(model_dir, exist_ok=True)
 
+        checker = []
+
         for batch_start in range(0, len(problem_instances_model), batch_size):
             batch_end = min(batch_start + batch_size, len(problem_instances_model))
             batch = problem_instances_model[batch_start:batch_end]
             
             logger.info(f"Processing batch {batch_start//batch_size + 1}, problems {batch_start+1} to {batch_end}")
-            results, detailed_costs = solver.solve([ci[1] for ci in batch])
+            problems = [ci[1] for ci in batch]
+            results, detailed_costs = solver.solve(problems)
+
+            checker.extend([problem.parse_and_check(r) for problem, r in zip(problems, results)])
+
+            logger.info(f"Solved problems: {np.mean([c[1] for c in checker])}")
 
             # If test run only do some quick logging
             if cfg.test_run:

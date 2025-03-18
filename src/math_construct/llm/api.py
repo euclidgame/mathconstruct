@@ -211,9 +211,18 @@ class APIQuery:
             max_tokens=self.max_tokens,
             top_p=self.kwargs.get("top_p", 0.95)
         )
+        queries = [
+            query + [{"role": "assistant", "content": "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."}]
+            for query in queries
+        ]
+        with open('chat_template.jinja', 'r') as f:
+            chat_template = f.read()
         responses = self.llm.chat(
             messages=queries,
             sampling_params=sampling_params,
+            continue_final_message=True,
+            add_generation_prompt=False,
+            chat_template=chat_template,
             use_tqdm=True
         )
         outputs = [response.outputs[0].text for response in responses]

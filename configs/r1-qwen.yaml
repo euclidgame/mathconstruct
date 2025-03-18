@@ -12,7 +12,7 @@ solver:
 inference:
   temperature: 0.6
   top_p: 0.95
-  max_tokens: 32768
+  max_tokens: 10000
   concurrent_requests: 10 
   timeout: 10000000
 problems:
