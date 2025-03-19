@@ -89,6 +89,7 @@ class APIQuery:
         self.sleep_after_request = sleep_after_request
         self.max_tokens_param = max_tokens_param
         self.continue_final_message = continue_final_message
+        self.seed = seed
 
         self.api = api
         self.api_key = None
