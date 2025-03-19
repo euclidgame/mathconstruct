@@ -241,6 +241,8 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
         os.makedirs(model_dir, exist_ok=True)
 
         all_correctness = []
+        for _ in range(len(problem_instances_model)):
+            all_correctness.append(False)
         total_costs = {'input_tokens': 0, 'output_tokens': 0, 'cost': 0}
 
         pbar = tqdm(range(cfg.trial_rounds), desc="Processing", ncols=100)
@@ -269,8 +271,13 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 checker_batch = [problem.parse_and_check(r) for problem, r in zip(problems, results)]
                 checker.extend(checker_batch)
 
-                logger.info(f"Solved problems: {np.mean([c[1] for c in checker])}")
+                logger.info(f"Solved problems in round {round}: {np.mean([c[1] for c in checker])}")
 
+                for i, c in enumerate(checker):
+                    if c[1]:
+                        all_correctness[i] = True
+
+                logger.info(f"Overall Correctness: {np.mean(all_correctness)}")
                 # If test run only do some quick logging
                 if cfg.test_run:
                     for ci, result in zip(batch, results):
@@ -312,10 +319,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 # Optionally update with batch information
                 tqdm.write(f"Processed batch {batch_start}:{batch_end} out of {len(problem_instances_model)}")
             logger.info(f"Accuracy in round {round}: {np.mean([c[1] for c in checker])}")
-            if all_correctness == []:
-                all_correctness = [c[1] for c in checker]
-            else:
-                all_correctness = [a or b for a, b in zip(all_correctness, [c[1] for c in checker])]
+            all_correctness = [a or b for a, b in zip(all_correctness, [c[1] for c in checker])]
             logger.info(f"Correctness: {np.mean(all_correctness)}")
 
             average_costs = {
@@ -330,10 +334,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             else:
                 costs_str = f"{average_costs:.4f}"
                 
-            pbar.set_postfix({
-                "correctness": f"{np.mean(all_correctness):.4f}", 
-                "costs": costs_str
-            })
+            logger.info(f"Costs after round {round}: {costs_str}")
 
         evaluation_results = {
             "correctness": np.mean(all_correctness),

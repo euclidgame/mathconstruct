@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "r1-qwen/thinking"
+output_dir: "r1-qwen/thinking/variations_4"
 trial_rounds: 1
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
@@ -19,4 +19,5 @@ inference:
   timeout: 10000000
 problems:
   - ".*"
-n_variations: 2
+n_variations: 4
+solver_batch_size: 15
