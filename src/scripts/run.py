@@ -198,6 +198,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             concurrent_requests=cfg.inference.concurrent_requests,
             timeout=cfg.inference.timeout,
             continue_final_message=cfg.solver.assistant_prefix is not None,
+            seed=cfg.inference.seed,
         )
         if cfg.solver.type_solver == "code":
             solver = CodeSolver(

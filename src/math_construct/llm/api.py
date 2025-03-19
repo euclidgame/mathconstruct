@@ -30,6 +30,7 @@ class APIQuery:
                  max_tokens_param="max_tokens", 
                  reasoning_effort=None,
                  continue_final_message=False,
+                 seed=None,
                  **kwargs):
         """
         Initializes an instance of the API class.
@@ -152,7 +153,8 @@ class APIQuery:
                 model=self.model,
                 tensor_parallel_size=torch.cuda.device_count(),
                 enforce_eager=True,
-                enable_prefix_caching=True
+                enable_prefix_caching=True,
+                seed=self.seed if self.seed is not None else 42
             )
         else:
             raise ValueError(f"API {self.api} not supported.")
