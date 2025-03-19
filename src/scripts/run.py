@@ -246,6 +246,8 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             all_correctness.append(False)
         total_costs = {'input_tokens': 0, 'output_tokens': 0, 'cost': 0}
 
+        pass_at_k_results = []
+
         pbar = tqdm(range(cfg.trial_rounds), desc="Processing", ncols=100)
         for round in pbar:
             checker = []
@@ -337,13 +339,22 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 
             logger.info(f"Costs after round {round}: {costs_str}")
 
+            pass_at_k_results.append({
+                "k": round + 1,
+                "correctness": np.mean(all_correctness),
+                "costs": total_costs,
+                "average_costs": average_costs,
+            })
+
         evaluation_results = {
             "correctness": np.mean(all_correctness),
             "costs": total_costs,
             "average_costs": average_costs,
         }
-        with open(os.path.join(model_dir, "results.json"), "w") as f:
+        with open(os.path.join(run_dir, "results.json"), "w") as f:
             json.dump(evaluation_results, f, indent=4)
+        with open(os.path.join(run_dir, "pass_at_k_results.json"), "w") as f:
+            json.dump(pass_at_k_results, f, indent=4)
         logger.info("Run finished")
 
 
