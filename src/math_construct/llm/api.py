@@ -29,6 +29,7 @@ class APIQuery:
                  throw_error_on_failure=False,
                  max_tokens_param="max_tokens", 
                  reasoning_effort=None,
+                 continue_final_message=False,
                  **kwargs):
         """
         Initializes an instance of the API class.
@@ -86,6 +87,7 @@ class APIQuery:
         self.sleep_on_error = sleep_on_error
         self.sleep_after_request = sleep_after_request
         self.max_tokens_param = max_tokens_param
+        self.continue_final_message = continue_final_message
 
         self.api = api
         self.api_key = None
@@ -174,10 +176,10 @@ class APIQuery:
         cost = response["input_tokens"] * self.read_cost + response["output_tokens"] * self.write_cost
         return cost / (10 ** 6)
 
-    def run_queries(self, queries):
+    def run_queries(self, queries, **kwargs):
         logger.info(f"Running {len(queries)} queries.")
         if self.api == "local":
-            return self.run_queries_local(queries)
+            return self.run_queries_local(queries, **kwargs)
         else:
             with ThreadPoolExecutor(max_workers=self.concurrent_requests) as executor:
                 future_to_index = {
@@ -205,23 +207,20 @@ class APIQuery:
         }
         return [result['output'] for result in results], detailed_cost, cost
     
-    def run_queries_local(self, queries):
+    def run_queries_local(self, queries, **kwargs):
         sampling_params = SamplingParams(
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-            top_p=self.kwargs.get("top_p", 0.95)
+            temperature=kwargs.get("temperature", self.temperature),
+            max_tokens=kwargs.get("max_tokens", self.max_tokens),
+            top_p=kwargs.get("top_p", self.kwargs.get("top_p", 0.95))
         )
-        queries = [
-            query + [{"role": "assistant", "content": "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."}]
-            for query in queries
-        ]
         with open('chat_template.jinja', 'r') as f:
             chat_template = f.read()
+        continue_final_message = kwargs.get("continue_final_message", self.continue_final_message)
         responses = self.llm.chat(
             messages=queries,
             sampling_params=sampling_params,
-            continue_final_message=True,
-            add_generation_prompt=False,
+            continue_final_message=continue_final_message,
+            add_generation_prompt=not continue_final_message,
             chat_template=chat_template,
             use_tqdm=True
         )

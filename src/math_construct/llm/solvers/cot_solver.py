@@ -9,10 +9,13 @@ class CoTSolver(Solver):
                  system_prompt: str = None, 
                  parse_feedback: bool = False,
                  check_feedback: bool = False, 
+                 budget_forcing: str = None,
                  max_feedback_rounds: int = 1,
                  formatting_prefix: str = "Format your reply as follows:",
                  give_solution: bool = False,
                  stop_at_timeout: bool = False,
+                 user_template: str = None,
+                 assistant_prefix: str = None,
                  error_string: str = r"The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."):
         """
         Initializes the CoTSolver with the given parameters.
@@ -36,11 +39,14 @@ class CoTSolver(Solver):
         self.system_prompt = system_prompt
         self.parse_feedback = parse_feedback
         self.check_feedback = check_feedback
+        self.budget_forcing = budget_forcing
         self.max_feedback_rounds = max_feedback_rounds
         self.formatting_prefix = formatting_prefix
         self.error_string = error_string
         self.give_solution = give_solution
         self.stop_at_timeout = stop_at_timeout
+        self.user_template = user_template
+        self.assistant_prefix = assistant_prefix
 
     def build_query(self, problem):
         """
@@ -61,7 +67,9 @@ class CoTSolver(Solver):
         messages = []
         if self.system_prompt is not None: 
             messages.append({"role": "system", "content": self.system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        messages.append({"role": "user", "content": self.user_template.format(prompt) if self.user_template is not None else prompt})
+        if self.assistant_prefix is not None:
+            messages.append({"role": "assistant", "content": self.assistant_prefix})
         return messages
     
     def check_timeout(self, query) -> bool:
@@ -96,7 +104,10 @@ class CoTSolver(Solver):
         if isinstance(response, tuple) and response[0] is None:
             query.append({"role": "api_error", "content": str(response[1])})
         else:
-            query.append({"role": "assistant", "content": response})
+            if query[-1]["role"] == "assistant":
+                query[-1]["content"] += response
+            else:
+                query.append({"role": "assistant", "content": response})
         return query
     
     def is_valid_trace(self, query):
@@ -170,6 +181,24 @@ class CoTSolver(Solver):
             queries_new.append(query)
             parsed_responses_new.append(parsed_response)
         return queries_new, parsed_responses_new
+    
+    def add_budget_forcing(self, queries, checker):
+        unsolved_indices = []
+        unsolved_queries = []
+        for i, query in enumerate(queries):
+            if checker[i][1] == False and self.detailed_cost[i]["output_tokens"] == self.querier.max_tokens:
+                query[-1]["content"] += self.budget_forcing
+                unsolved_indices.append(i)
+                unsolved_queries.append(query)
+        responses, detailed_cost, cost = self.querier.run_queries(unsolved_queries, kwargs={"max_tokens": 200, "continue_final_message": True})
+        self.cost += cost["cost"]
+        for i in range(len(unsolved_queries)):
+            queries[unsolved_indices[i]] = self.add_response(queries[unsolved_indices[i]], responses[i])
+            self.detailed_cost[unsolved_indices[i]]["cost"] += detailed_cost[i]["cost"]
+            self.detailed_cost[unsolved_indices[i]]["input_tokens"] += detailed_cost[i]["input_tokens"] 
+            self.detailed_cost[unsolved_indices[i]]["output_tokens"] += detailed_cost[i]["output_tokens"]
+        logger.info("Budget forcing done.")
+        return queries
     
     def solve_initial_round(self, problems):
         """
@@ -270,7 +299,11 @@ class CoTSolver(Solver):
         queries = self.solve_initial_round(problems)
         checker = [problem.parse_and_check(q) for problem, q in zip(problems, queries)]
         logger.info(f"Solved instances after initial round: {np.mean([c[1] for c in checker]):.5f}")
-        queries = self.solve_parse_feedback_rounds(problems, queries)
+        # queries = self.solve_parse_feedback_rounds(problems, queries)
         # log cost
+        if self.budget_forcing is not None:
+            queries = self.add_budget_forcing(queries, checker)
+            checker = [problem.parse_and_check(q) for problem, q in zip(problems, queries)]
+            logger.info(f"Solved instances after budget forcing: {np.mean([c[1] for c in checker]):.5f}")
         logger.info(f"Total cost: {self.cost}")
         return queries, self.detailed_cost

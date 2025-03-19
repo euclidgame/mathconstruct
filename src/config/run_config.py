@@ -21,10 +21,13 @@ class SolverConfig(PBMwODP, extra="forbid"):  # type: ignore
     system_prompt: str = Field(None, description="System prompt for the model")
     parse_feedback: bool = Field(False, description="Parse feedback")
     check_feedback: bool = Field(False, description="Parse feedback")
+    budget_forcing: Optional[str] = Field(None, description="String to add after the budget is reached")
     max_feedback_rounds: int = Field(1, description="Max feedback rounds")
     formatting_prefix: str = Field("Format your reply as follows:", description="Formatting prefix for the model")
     error_string: str = Field(None, description="Error string for the model")
     give_solution: bool = Field(False, description="Give solution to the model")
+    assistant_prefix: Optional[str] = Field(None, description="Prefix of assistant role in the response")
+    user_template: Optional[str] = Field(None, description="Template for the user role in the response")
 
     # code specific
     image_name: str = Field("mathconstruct-sandbox", description="Docker image name")
@@ -42,6 +45,7 @@ class RunConfig(PBMwODP):
     output_dir: str = Field(None, description="Output directory under outputs/, defaults to timestamp")
     input_dir_revisions: str = Field(None, description="Input directory of revision problems if running on revisions")
     models: List[str] = Field(..., description="List of api:model_name pairs")
+    trial_rounds: int = Field(1, description="Number of trial rounds")
     inference: InferenceConfig
     solver: SolverConfig
     problems: List[str] = Field(..., description="List of problem regexes, we run the union of all matched problems")

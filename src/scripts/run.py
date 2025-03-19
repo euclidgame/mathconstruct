@@ -196,7 +196,8 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             top_p=cfg.inference.top_p,
             max_tokens=cfg.inference.max_tokens,
             concurrent_requests=cfg.inference.concurrent_requests,
-            timeout=cfg.inference.timeout
+            timeout=cfg.inference.timeout,
+            continue_final_message=cfg.solver.assistant_prefix is not None,
         )
         if cfg.solver.type_solver == "code":
             solver = CodeSolver(
@@ -204,6 +205,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 system_prompt=cfg.solver.system_prompt,
                 parse_feedback=cfg.solver.parse_feedback,
                 check_feedback=cfg.solver.check_feedback,
+                budget_forcing=cfg.solver.budget_forcing,
                 max_feedback_rounds=cfg.solver.max_feedback_rounds,
                 formatting_prefix=cfg.solver.formatting_prefix,
                 error_string=cfg.solver.error_string,
@@ -227,6 +229,8 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 formatting_prefix=cfg.solver.formatting_prefix,
                 error_string=cfg.solver.error_string,
                 give_solution=cfg.solver.give_solution,
+                user_template=cfg.solver.user_template,
+                assistant_prefix=cfg.solver.assistant_prefix,
             )
 
         # Process problems in batches
@@ -236,10 +240,19 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
         os.makedirs(model_dir, exist_ok=True)
 
         all_correctness = []
+        total_costs = {'input_tokens': 0, 'output_tokens': 0, 'cost': 0}
 
-        for i in range(32):
+        pbar = tqdm(range(cfg.trial_rounds), desc="Processing", ncols=100)
+        for round in pbar:
             checker = []
-            for batch_start in range(0, len(problem_instances_model), batch_size):
+            # Clear all problem dump
+            for problem_class in problem_dumps:
+                for i, dump in enumerate(problem_dumps[problem_class]):
+                    problem_dumps[problem_class][i] = None
+            for batch_start in tqdm(range(0, len(problem_instances_model), batch_size), 
+                                   desc="Processing batches", 
+                                   leave=False,  # This makes the inner bar disappear after completion
+                                   ncols=100):
                 batch_end = min(batch_start + batch_size, len(problem_instances_model))
                 batch = problem_instances_model[batch_start:batch_end]
                 
@@ -247,7 +260,13 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 problems = [ci[1] for ci in batch]
                 results, detailed_costs = solver.solve(problems)
 
-                checker.extend([problem.parse_and_check(r) for problem, r in zip(problems, results)])
+                for cost in detailed_costs:
+                    total_costs['input_tokens'] += cost['input_tokens']
+                    total_costs['output_tokens'] += cost['output_tokens']
+                    total_costs['cost'] += cost['cost']
+
+                checker_batch = [problem.parse_and_check(r) for problem, r in zip(problems, results)]
+                checker.extend(checker_batch)
 
                 logger.info(f"Solved problems: {np.mean([c[1] for c in checker])}")
 
@@ -259,16 +278,19 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                     continue
 
                 # Process and store results for this batch
-                for ci, result, cost in zip(batch, results, detailed_costs):
+                for ci, result, cost, correctness in zip(batch, results, detailed_costs, checker_batch):
                     problem_class, problem_inst = ci
+                    if correctness[1]:
+                        logger.info(f"Successfully solved {problem_class.config.name}!!!")
                     if problem_class not in problem_dumps:
                         problem_dumps[problem_class] = []
                     # remove the input query and system message from the response
-                    if result[0]['role'] == "system":
-                        result = result[1:]
-                    result = result[1:]
+                    # if result[0]['role'] == "system":
+                    #     result = result[1:]
+                    # result = result[1:]
                     dump = {
                         "problem": problem_inst.to_json(),
+                        "correctness": correctness[1],
                         "response": result,
                         "cost": cost
                     }
@@ -281,16 +303,36 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                     # If we completed a class, save the results
                     if all(d is not None for d in problem_dumps[problem_class]):
                         dumps = problem_dumps[problem_class]
-                        problem_path = os.path.join(model_dir, f"{problem_class.config.name}-try-{i}.json")
+                        problem_path = os.path.join(model_dir, f"{problem_class.config.name}-try-{round}.json")
                         with open(problem_path, "w") as f: 
                             json.dump(dumps, f, indent=4)
                         print(f"Finished and saved:", problem_path)
+
+                # Optionally update with batch information
+                tqdm.write(f"Processed batch {batch_start}:{batch_end} out of {len(problem_instances_model)}")
+            logger.info(f"Accuracy in round {round}: {np.mean([c[1] for c in checker])}")
             if all_correctness == []:
                 all_correctness = [c[1] for c in checker]
             else:
                 all_correctness = [a or b for a, b in zip(all_correctness, [c[1] for c in checker])]
             logger.info(f"Correctness: {np.mean(all_correctness)}")
 
+            average_costs = {
+                'input_tokens': total_costs['input_tokens'] / (len(problem_instances_model) * (round + 1)),
+                'output_tokens': total_costs['output_tokens'] / (len(problem_instances_model) * (round + 1)),
+                'cost': total_costs['cost'] / (len(problem_instances_model) * (round + 1)),
+            }
+
+            # Update progress bar with additional information
+            pbar.set_postfix({"correctness": f"{np.mean(all_correctness):.4f}", "costs": average_costs})
+
+        evaluation_results = {
+            "correctness": np.mean(all_correctness),
+            "costs": total_costs,
+            "average_costs": average_costs,
+        }
+        with open(os.path.join(model_dir, "results.json"), "w") as f:
+            json.dump(evaluation_results, f, indent=4)
         logger.info("Run finished")
 
 
