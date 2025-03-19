@@ -225,6 +225,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 system_prompt=cfg.solver.system_prompt,
                 parse_feedback=cfg.solver.parse_feedback,
                 check_feedback=cfg.solver.check_feedback,
+                budget_forcing=cfg.solver.budget_forcing,
                 max_feedback_rounds=cfg.solver.max_feedback_rounds,
                 formatting_prefix=cfg.solver.formatting_prefix,
                 error_string=cfg.solver.error_string,
@@ -323,8 +324,16 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 'cost': total_costs['cost'] / (len(problem_instances_model) * (round + 1)),
             }
 
-            # Update progress bar with additional information
-            pbar.set_postfix({"correctness": f"{np.mean(all_correctness):.4f}", "costs": average_costs})
+            # For a very compact display
+            if isinstance(average_costs, dict):
+                costs_str = "/".join([f"{k}:{v:.4f}" for k, v in average_costs.items()])
+            else:
+                costs_str = f"{average_costs:.4f}"
+                
+            pbar.set_postfix({
+                "correctness": f"{np.mean(all_correctness):.4f}", 
+                "costs": costs_str
+            })
 
         evaluation_results = {
             "correctness": np.mean(all_correctness),
