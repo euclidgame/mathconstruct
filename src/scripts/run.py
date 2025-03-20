@@ -275,7 +275,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
                 checker_batch = [problem.parse_and_check(r) for problem, r in zip(problems, results)]
                 checker.extend(checker_batch)
 
-                logger.info(f"Solved problems in round {round}: {np.mean([c[1] for c in checker])}")
+                logger.info(f"Solved problems in round {round+1}: {np.mean([c[1] for c in checker])}")
 
                 for i, c in enumerate(checker):
                     if c[1]:
@@ -322,7 +322,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
 
                 # Optionally update with batch information
                 tqdm.write(f"Processed batch {batch_start}:{batch_end} out of {len(problem_instances_model)}")
-            logger.info(f"Accuracy in round {round}: {np.mean([c[1] for c in checker])}")
+            logger.info(f"Accuracy in round {round+1}: {np.mean([c[1] for c in checker])}")
             all_correctness = [a or b for a, b in zip(all_correctness, [c[1] for c in checker])]
             logger.info(f"Correctness: {np.mean(all_correctness)}")
 
@@ -338,7 +338,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             else:
                 costs_str = f"{average_costs:.4f}"
                 
-            logger.info(f"Costs after round {round}: {costs_str}")
+            logger.info(f"Costs after round {round+1}: {costs_str}")
 
             pass_at_k_results.append({
                 "k": round + 1,
