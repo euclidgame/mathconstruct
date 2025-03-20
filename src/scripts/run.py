@@ -99,7 +99,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
     # New config = new run, set up the run dir and put the meta file  
     ts = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     logger.info(f"Current time: {ts}")
-    run_dir = os.path.join("outputs", cfg.output_dir if cfg.output_dir is not None else ts)
+    run_dir = os.path.join("mathconstruct_results", cfg.output_dir if cfg.output_dir is not None else ts)
     if not cfg.test_run:
         os.makedirs(run_dir, exist_ok=True)
         with open(f"{run_dir}/meta.json", "w") as f:
