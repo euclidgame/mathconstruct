@@ -13,6 +13,7 @@ def transfer_data_to_gcs(bucket_name, source_dir, destination_prefix=""):
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     
+    print(f"Uploading {source_dir} to {bucket_name}/{destination_prefix}")
     for root, dirs, files in os.walk(source_dir):
         for file in files:
             local_file_path = os.path.join(root, file)
