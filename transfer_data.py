@@ -1,6 +1,6 @@
 from google.cloud import storage
 import os
-
+import argparse
 def transfer_data_to_gcs(bucket_name, source_dir, destination_prefix=""):
     """
     Uploads an entire directory to the bucket.
@@ -28,4 +28,13 @@ def transfer_data_to_gcs(bucket_name, source_dir, destination_prefix=""):
             print(f"Uploaded {local_file_path} to {blob_path}")
 
 if __name__ == "__main__":
-    transfer_data_to_gcs("results-bucket-fsfrfr", "mathconstruct_results", "mathconstruct_results")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--list_buckets", action="store_true")
+    args = parser.parse_args()
+    if args.list_buckets:
+        storage_client = storage.Client()
+        buckets = storage_client.list_buckets()
+        for bucket in buckets:
+            print(bucket.name)
+    else:
+        transfer_data_to_gcs("results-bucket-fsfrfr", "mathconstruct_results", "mathconstruct_results")
