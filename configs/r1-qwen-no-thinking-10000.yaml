@@ -18,6 +18,7 @@ inference:
   max_tokens: 10000
   concurrent_requests: 20
   timeout: 10000000
+  chat_template: "chat_template.jinja"
 problems:
   - ".*"
 n_variations: 1

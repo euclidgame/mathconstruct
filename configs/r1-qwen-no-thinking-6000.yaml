@@ -19,6 +19,7 @@ inference:
   concurrent_requests: 20
   timeout: 10000000
   seed: 666
+  chat_template: "chat_template.jinja"
 problems:
   - ".*"
 n_variations: 1

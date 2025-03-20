@@ -16,6 +16,7 @@ class InferenceConfig(PBMwODP, extra="forbid"):  # type: ignore
     concurrent_requests: int = Field(..., description="API concurrent requests")
     timeout: int = Field(500, description="Timeout for API")
     seed: Optional[int] = Field(None, description="Seed for sampling")
+    chat_template: Optional[str] = Field(None, description="Chat template for sampling")
 
 class SolverConfig(PBMwODP, extra="forbid"):  # type: ignore
     type_solver: SolverEnum = Field(SolverEnum.CoT, description="Type of solver")

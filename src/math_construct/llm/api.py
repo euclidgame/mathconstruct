@@ -31,6 +31,7 @@ class APIQuery:
                  reasoning_effort=None,
                  continue_final_message=False,
                  seed=None,
+                 chat_template=None,
                  **kwargs):
         """
         Initializes an instance of the API class.
@@ -90,7 +91,7 @@ class APIQuery:
         self.max_tokens_param = max_tokens_param
         self.continue_final_message = continue_final_message
         self.seed = seed
-
+        self.chat_template = chat_template
         self.api = api
         self.api_key = None
         self.base_url = None
@@ -216,8 +217,11 @@ class APIQuery:
             max_tokens=kwargs.get("max_tokens", self.max_tokens),
             top_p=kwargs.get("top_p", self.kwargs.get("top_p", 0.95))
         )
-        with open('chat_template.jinja', 'r') as f:
-            chat_template = f.read()
+        if self.chat_template is not None:
+            with open(self.chat_template, 'r') as f:
+                chat_template = f.read()
+        else:
+            chat_template = None
         continue_final_message = kwargs.get("continue_final_message", self.continue_final_message)
         responses = self.llm.chat(
             messages=queries,

@@ -197,6 +197,7 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
             max_tokens=cfg.inference.max_tokens,
             concurrent_requests=cfg.inference.concurrent_requests,
             timeout=cfg.inference.timeout,
+            chat_template=cfg.inference.chat_template,
             continue_final_message=cfg.solver.assistant_prefix is not None,
             seed=cfg.inference.seed,
         )
