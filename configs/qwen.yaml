@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "mathconstruct_results/qwen"
+output_dir: "qwen"
 trial_rounds: 1
 models:
  - "local:Qwen/Qwen2.5-32B-Instruct"

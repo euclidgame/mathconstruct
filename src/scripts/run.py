@@ -170,9 +170,9 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
         problem_instances_model = []
         for problem_class, problem_inst in problem_instances:
             add = True
-            if os.path.exists(f"outputs/{cfg.output_dir}/{model_name.replace("/", "__")}/{problem_class.config.name}.json"):
+            if os.path.exists(f"mathconstruct_results/{cfg.output_dir}/{model_name.replace("/", "__")}/{problem_class.config.name}.json"):
                 # load the json and check if we have enough instances
-                json_input = json.load(open(f"outputs/{cfg.output_dir}/{model_name.replace("/", "__")}/{problem_class.config.name}.json", "r"))
+                json_input = json.load(open(f"mathconstruct_results/{cfg.output_dir}/{model_name.replace("/", "__")}/{problem_class.config.name}.json", "r"))
                 # load the problems from json
                 problems_from_json = [(problem_class.from_json(entry["problem"]), entry) for entry in json_input]
                 for problem in problems_from_json:
