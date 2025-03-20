@@ -1,6 +1,6 @@
 test_run: False
 output_dir: "qwen"
-trial_rounds: 1
+trial_rounds: 16
 models:
  - "local:Qwen/Qwen2.5-32B-Instruct"
 solver:
