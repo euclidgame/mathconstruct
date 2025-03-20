@@ -17,6 +17,6 @@ inference:
   concurrent_requests: 20
   timeout: 10000000
 problems:
-  - "bxmo"
+  - ".*"
 n_variations: 1
 solver_batch_size: 80
