@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "mathconstruct_results/thinking/variations_1/max_32768"
+output_dir: "thinking/variations_1/max_32768"
 trial_rounds: 1
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"

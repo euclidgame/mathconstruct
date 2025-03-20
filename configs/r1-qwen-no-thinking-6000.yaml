@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "mathconstruct_results/no-thinking/variations_1/max_6000_budget_forcing"
+output_dir: "no-thinking/variations_1/max_6000_budget_forcing"
 trial_rounds: 16
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
