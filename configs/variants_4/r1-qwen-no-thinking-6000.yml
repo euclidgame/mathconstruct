@@ -23,4 +23,4 @@ inference:
 problems:
   - ".*"
 n_variations: 4
-solver_batch_size: 90
+solver_batch_size: 100
