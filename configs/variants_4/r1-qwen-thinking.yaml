@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "no-thinking/variations_4/max_6000_budget_forcing"
+output_dir: "thinking/variations_4/max_32768"
 trial_rounds: 16
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
@@ -10,15 +10,13 @@ solver:
   error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
   max_feedback_rounds: 0
   formatting_prefix: "Format your reply as follows:"
-  assistant_prefix: "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."
-  budget_forcing: "\n\nFinal answer: the final answer is"
+  user_template: "{} You should carefully think about the problem and reason step by step."
 inference:
   temperature: 0.6
   top_p: 0.95
-  max_tokens: 6000
+  max_tokens: 32768
   concurrent_requests: 20
   timeout: 10000000
-  seed: 666
   chat_template: "chat_template.jinja"
 problems:
   - ".*"
