@@ -190,7 +190,7 @@ class CoTSolver(Solver):
                 query[-1]["content"] += self.budget_forcing
                 unsolved_indices.append(i)
                 unsolved_queries.append(query)
-        responses, detailed_cost, cost = self.querier.run_queries(unsolved_queries, kwargs={"max_tokens": 500, "continue_final_message": True})
+        responses, detailed_cost, cost = self.querier.run_queries(unsolved_queries, max_tokens=500, continue_final_message=True)
         self.cost += cost["cost"]
         for i in range(len(unsolved_queries)):
             queries[unsolved_indices[i]] = self.add_response(queries[unsolved_indices[i]], responses[i])
