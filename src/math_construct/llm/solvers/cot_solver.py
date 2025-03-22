@@ -195,7 +195,6 @@ class CoTSolver(Solver):
         for i in range(len(unsolved_queries)):
             queries[unsolved_indices[i]] = self.add_response(queries[unsolved_indices[i]], responses[i])
             self.detailed_cost[unsolved_indices[i]]["cost"] += detailed_cost[i]["cost"]
-            self.detailed_cost[unsolved_indices[i]]["input_tokens"] += detailed_cost[i]["input_tokens"] 
             self.detailed_cost[unsolved_indices[i]]["output_tokens"] += detailed_cost[i]["output_tokens"]
         logger.info("Budget forcing done.")
         return queries
