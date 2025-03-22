@@ -11,6 +11,7 @@ solver:
   max_feedback_rounds: 0
   formatting_prefix: "Format your reply as follows:"
   user_template: "{} You should carefully think about the problem and reason step by step."
+  budget_forcing: "\n\nFinal answer: the final answer is"
 inference:
   temperature: 0.6
   top_p: 0.95
@@ -18,7 +19,6 @@ inference:
   concurrent_requests: 20
   timeout: 10000000
   chat_template: "chat_template.jinja"
-  budget_forcing: "\n\nFinal answer: the final answer is"
 problems:
   - ".*"
 n_variations: 4
