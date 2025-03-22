@@ -1,5 +1,5 @@
 test_run: False
-output_dir: "thinking/variations_1/max_2500_budget_forcing/pass_at_16"
+output_dir: "thinking/test"
 trial_rounds: 1
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
