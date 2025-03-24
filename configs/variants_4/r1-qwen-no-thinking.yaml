@@ -1,0 +1,25 @@
+test_run: False
+output_dir: "no-thinking/variations_4/no_budget_forcing"
+trial_rounds: 16
+models:
+ - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+solver:
+  #system_prompt: "You are a math expert." 
+  parse_feedback: False
+  check_feedback: False
+  error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
+  max_feedback_rounds: 0
+  formatting_prefix: "Format your reply as follows:"
+  assistant_prefix: "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."
+inference:
+  temperature: 0.6
+  top_p: 0.95
+  max_tokens: 32768
+  concurrent_requests: 20
+  timeout: 10000000
+  seed: 666
+  chat_template: "chat_template.jinja"
+problems:
+  - ".*"
+n_variations: 4
+solver_batch_size: 480
