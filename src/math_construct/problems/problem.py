@@ -78,7 +78,7 @@ class ProblemConfig:
 
     original_parameters: Optional[dict[str, str | int | list[str] | list[list[str]]]]
 
-    timeout: int = 60
+    timeout: int = 5
     
     # The URL of where the problem can be found (e.g. "https://example.com/problem-1")
     problem_url: Optional[str] = None 
