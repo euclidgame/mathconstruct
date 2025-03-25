@@ -10,6 +10,7 @@ solver:
   error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
   max_feedback_rounds: 0
   formatting_prefix: "Format your reply as follows:"
+  user_template: "{} Please solve the problem directly without any thinking process."
   assistant_prefix: "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."
 inference:
   temperature: 0.6
