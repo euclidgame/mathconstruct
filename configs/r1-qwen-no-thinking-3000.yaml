@@ -18,9 +18,10 @@ inference:
   max_tokens: 4000
   concurrent_requests: 20
   timeout: 10000000
-  seed: 666
+  seed: 888
   chat_template: "chat_template.jinja"
 problems:
   - ".*"
 n_variations: 1
 solver_batch_size: 150
+start_from_round: 19
