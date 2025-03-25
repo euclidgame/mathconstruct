@@ -251,6 +251,8 @@ def run(cfg, apis_restricted=None, models_restricted=None) -> None:
 
         pbar = tqdm(range(cfg.trial_rounds), desc="Processing", ncols=100)
         for round in pbar:
+            if round < cfg.start_from_round:
+                continue
             checker = []
             # Clear all problem dump
             for problem_class in problem_dumps:

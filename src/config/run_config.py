@@ -55,3 +55,4 @@ class RunConfig(PBMwODP):
     tags: List[str] = Field([], description="List of problem tags to filter by.")
     n_try_variations: Optional[int] = Field(None, description="Number of variations to generate for each problem before filtering by tags")
     solver_batch_size: int = Field(10, description="Number of problems to solve in each solver batch")
+    start_from_round: int = Field(0, description="Start from round")
