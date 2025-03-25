@@ -228,9 +228,18 @@ class Problem:
                 return False, f"Matrix is not square", CheckerTag.INCORRECT_FORMAT
         return True, "OK", CheckerTag.CORRECT
     
+    def check_wrapper(self, answer, conn):
+        try:
+            result = self.check(answer)
+            conn.send(result)
+        except Exception as e:
+            conn.send(f"[Error] {e}")
+        finally:
+            conn.close()
+    
     def safe_check_response(self, answer, timeout=1):
         parent_conn, child_conn = mp.Pipe()
-        p = mp.Process(target=self.check, args=(answer, child_conn))
+        p = mp.Process(target=self.check_wrapper, args=(answer, child_conn))
         p.start()
         p.join(timeout)
         if p.is_alive():
