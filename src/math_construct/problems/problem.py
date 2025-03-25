@@ -12,7 +12,7 @@ from loguru import logger
 from enum import Enum
 import concurrent.futures
 import multiprocessing as mp
-
+import queue
 class Tag(str, Enum):
     # Categories
 
@@ -228,18 +228,16 @@ class Problem:
                 return False, f"Matrix is not square", CheckerTag.INCORRECT_FORMAT
         return True, "OK", CheckerTag.CORRECT
     
-    def check_wrapper(self, answer, conn):
+    def check_wrapper(self, answer, q):
         try:
             result = self.check(answer)
-            conn.send(result)
+            q.put(result)
         except Exception as e:
-            conn.send(f"[Error] {e}")
-        finally:
-            conn.close()
-    
+            q.put(f"[Error] {e}")
+
     def safe_check_response(self, answer, timeout=1):
-        parent_conn, child_conn = mp.Pipe()
-        p = mp.Process(target=self.check_wrapper, args=(answer, child_conn))
+        q = mp.Queue()
+        p = mp.Process(target=self.check_wrapper, args=(answer, q))
         p.start()
         p.join(timeout)
         if p.is_alive():
@@ -247,26 +245,19 @@ class Problem:
             p.terminate()
             p.join()
             return False
-        if parent_conn.poll():
-            result = parent_conn.recv()
+
+        try:
+            result = q.get(timeout=1)  # prevent hanging if nothing is ever put
             if isinstance(result, str) and result.startswith("[Error]"):
                 print(result)
                 return False
             return result
-        return False
+        except queue.Empty:
+            print("[Error] No result returned")
+            return False
 
     def check_with_timeout(self, answer):
-        """
-        Runs the check function with a timeout.
-        """
-        with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self.safe_check_response, answer, self.config.timeout)
-            try:
-                result = future.result(timeout=self.config.timeout)
-                return result
-            except concurrent.futures.TimeoutError:
-                future.cancel()
-                raise TimeoutError(f"check() did not complete within {self.config.timeout} seconds.")
+        return self.safe_check_response(answer, self.config.timeout)
 
     # Always returns answer, is_correct, details
     def parse_and_check(self, output_str: Union[list[dict[str]], str]) -> tuple[str, bool, str]:
