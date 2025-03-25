@@ -1,6 +1,6 @@
 test_run: False
 output_dir: "no-thinking/variations_1/max_32768"
-trial_rounds: 16
+trial_rounds: 32
 models:
  - "local:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 solver:
@@ -10,7 +10,6 @@ solver:
   error_string: "The solution parser encountered the following error:\n{error}\nPlease format your reply accurately."
   max_feedback_rounds: 0
   formatting_prefix: "Format your reply as follows:"
-  user_template: "{} Please solve the problem directly without any thinking process."
   assistant_prefix: "<think>\nOkay I have finished thinking.\n</think>\nLet's solve the problem."
 inference:
   temperature: 0.6
