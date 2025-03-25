@@ -11,6 +11,7 @@ import time
 from loguru import logger
 from enum import Enum
 import concurrent.futures
+import multiprocessing as mp
 
 class Tag(str, Enum):
     # Categories
@@ -226,13 +227,31 @@ class Problem:
             if not all(len(row) == len(solution) for row in solution):
                 return False, f"Matrix is not square", CheckerTag.INCORRECT_FORMAT
         return True, "OK", CheckerTag.CORRECT
-        
+    
+    def safe_check_response(self, answer, timeout=1):
+        parent_conn, child_conn = mp.Pipe()
+        p = mp.Process(target=self.check, args=(answer, child_conn))
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            print("[Timeout] Killing response")
+            p.terminate()
+            p.join()
+            return False
+        if parent_conn.poll():
+            result = parent_conn.recv()
+            if isinstance(result, str) and result.startswith("[Error]"):
+                print(result)
+                return False
+            return result
+        return False
+
     def check_with_timeout(self, answer):
         """
         Runs the check function with a timeout.
         """
         with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(self.check, answer)
+            future = executor.submit(self.safe_check_response, answer, self.config.timeout)
             try:
                 result = future.result(timeout=self.config.timeout)
                 return result
